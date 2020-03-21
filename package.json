@@ -6,6 +6,8 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "airtable": "^0.8.1"
+  },
   "devDependencies": {}
 }
