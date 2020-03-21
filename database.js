@@ -53,6 +53,9 @@ module.exports = async function () {
         delete initiative['CategoriesNames'];
         delete initiative['CitiesNames'];
         delete initiative['CommunicationTypesNames'];
+        delete initiative['SubCategoriesParents'];
+        delete initiative['SubCategoriesNames'];
+        delete initiative['SubCategories'];
         Object.keys(initiative).map(key => {
             initiative[key.charAt(0).toLowerCase() + key.slice(1)] = initiative[key];
             delete initiative[key];
