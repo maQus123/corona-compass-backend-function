@@ -1,48 +1,32 @@
 module.exports = async function (context, req) {
-    // Connect airtable
-    const Airtable = require('airtable');
-    const db = Airtable.base(process.env.AIRTABLE_BASE);
-    // Load data
-    const retrieveBucket = (bucketName) => {
-        return new Promise((resolve, reject) => {
-            let results = [];
-            db(bucketName).select().eachPage((records, fetchNextPage) => {
-                records.forEach(function(record) {
-                    let props = record['_rawJson'];            
-                    results.push(props.fields);
-                });
-                fetchNextPage();
-            }, (err) => {
-                if(err) {
-                    reject(err);
-                } else {
-                    resolve(results);
-                }
-            });
-        });
-    }
-    initiatives = await retrieveBucket('Initiatives');
-    // Clean data
-    initiatives.map(initiative => {
-        initiative['BeneficiaryTypes'] = (initiative['BeneficiaryTypesNames'] || '').split('|');
-        initiative['Categories'] = (initiative['CategoriesNames'] || '').split('|');
-        initiative['Cities'] = (initiative['CitiesNames'] || '').split('|').map(city => city.trim());
-        initiative['CommunicationTypes'] = (initiative['CommunicationTypesNames'] || '').split('|');
-        initiative['Zips'] = (initiative['Zips'] || '').split(', ');
-        delete initiative['BeneficiaryTypesNames'];
-        delete initiative['CategoriesNames'];
-        delete initiative['CitiesNames'];
-        delete initiative['CommunicationTypesNames'];
-        Object.keys(initiative).map(key => {
-            initiative[key.charAt(0).toLowerCase() + key.slice(1)] = initiative[key];
-            delete initiative[key];
-        });
-        return initiative;
+    let database = await require('../database.js')();
+    const valueSeperator = ',';
+    const filters = Object.keys(req.query);
+    // Boolean Filters
+    ['isForHelpers', 'isForHelpees'].map(filterName => {
+        if(filters.includes(filterName)) {
+            database = database.filter(record => !!record[filterName] == ("1" == req.query[filterName]));
+        }
     });
+    // Keyword filters
+    ['beneficiaryTypes', 'communicationTypes', 'zips'].map(filterName => {
+        if(filters.includes(filterName)) {
+            let options = req.query[filterName].split(valueSeperator);
+            database = database.filter(record => record[filterName].filter(x => options.includes(x)).length);
+        }
+    });
+    if(filters.includes('categories')) {
+        let options = req.query.categories.split(valueSeperator);
+        database = database.filter(record => record.categories.filter(x => options.includes(x.name)).length);
+    }
+    if(filters.includes('subCategories')) {
+        let options = req.query.subCategories.split(valueSeperator);
+        database = database.filter(record => record.categories.filter(category => category.children.filter(x => options.includes(x.name)).length).length);
+    }
     // Respond
     context.res = {
         status: 200,
-        body: JSON.stringify(initiatives),
+        body: JSON.stringify(database),
         headers: {
             'Content-Type': 'application/json'
         }
