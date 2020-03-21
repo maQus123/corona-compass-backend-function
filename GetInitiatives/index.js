@@ -1,7 +1,7 @@
 module.exports = async function (context, req) {
     // Connect airtable
     const Airtable = require('airtable');
-    const db = Airtable.base('appIXD32LmYq6mlXV');
+    const db = Airtable.base(process.env.AIRTABLE_BASE);
     // Load data
     const retrieveBucket = (bucketName) => {
         return new Promise((resolve, reject) => {
